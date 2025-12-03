@@ -41,8 +41,9 @@ def download_and_load_base_model():
             model_name,
             trust_remote_code=True,
             cache_dir="./storage/model_cache",
-            torch_dtype=torch.float16 if settings.FP16_TRAINING and torch.cuda.is_available() else torch.float32,
-            device_map="auto" if torch.cuda.is_available() else None
+            torch_dtype=torch.float32,  # Always use float32 for CPU
+            device_map=None,  # Don't use device_map for CPU
+            low_cpu_mem_usage=True
         )
         
         logger.info(f"Model loaded successfully", extra={

@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     BATCH_SIZE: int = 2
     LEARNING_RATE: float = 2e-4
     MAX_LENGTH: int = 1024  # Token limit for GPT-2. Use 2048+ for Llama
-    FP16_TRAINING: bool = True  # Use mixed precision (faster on GPU)
+    FP16_TRAINING: bool = False  # Disabled for CPU compatibility
     
     # ============ CHROMADB CONFIGURATION ============
     CHUNK_SIZE: int = 400  # Words per chunk
