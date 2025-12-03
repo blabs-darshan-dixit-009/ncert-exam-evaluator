@@ -1,41 +1,41 @@
 # Core FastAPI
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-multipart==0.0.6
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
 
 # Configuration Management
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-dotenv==1.0.0
+pydantic==2.10.5
+pydantic-settings==2.7.1
+python-dotenv==1.0.1
 
-# Transformers and ML
-transformers==4.35.2
-torch==2.1.1
-peft==0.7.1
-accelerate==0.25.0
-bitsandbytes==0.41.3
+# Transformers and ML (Updated for compatibility)
+transformers==4.46.3
+torch>=2.2.0
+peft==0.13.2
+accelerate==1.2.1
+bitsandbytes==0.45.0
 
 # Embedding Models
-sentence-transformers==2.2.2
+sentence-transformers==3.3.1
 
 # Vector Database
-chromadb==0.4.18
+chromadb==0.5.23
 
 # PDF Processing
 PyPDF2==3.0.1
-pdfplumber==0.10.3
+pdfplumber==0.11.4
 
 # Data Processing
-numpy==1.26.2
-pandas==2.1.3
+numpy>=1.24.0
+pandas>=2.0.0
 
 # Logging and Monitoring
-loguru==0.7.2
+loguru==0.7.3
 
 # Testing (optional)
-pytest==7.4.3
-pytest-asyncio==0.21.1
-httpx==0.25.2
+pytest==8.3.4
+pytest-asyncio==0.24.0
+httpx==0.28.1
 
 # Type Checking (optional)
-mypy==1.7.1
+mypy==1.14.0
