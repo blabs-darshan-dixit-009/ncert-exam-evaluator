@@ -8,12 +8,13 @@ pydantic==2.10.5
 pydantic-settings==2.7.1
 python-dotenv==1.0.1
 
-# Transformers and ML (Updated for compatibility)
+# Transformers and ML
 transformers==4.46.3
 torch>=2.2.0
 peft==0.13.2
 accelerate==1.2.1
 bitsandbytes==0.45.0
+datasets==3.2.0
 
 # Embedding Models
 sentence-transformers==3.3.1
