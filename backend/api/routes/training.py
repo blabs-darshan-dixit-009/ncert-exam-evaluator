@@ -1,6 +1,6 @@
 # api/routes/training.py
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from typing import List
 import logging
 import json
@@ -16,6 +16,7 @@ from models.lora_trainer import LoRATrainer
 from models.chromadb_handler import ChromaDBHandler
 from utils.pdf_processor import PDFProcessor
 from utils.training_progress import progress_manager
+from utils.background_training import background_trainer
 from config.settings import settings
 
 router = APIRouter()
@@ -41,10 +42,26 @@ async def get_training_progress():
     if not progress:
         return {
             "status": "no_training",
-            "status_message": "No training in progress"
+            "status_message": "No training in progress",
+            "is_training_active": background_trainer.is_training_active()
         }
     
+    # Add thread status
+    progress["thread_status"] = background_trainer.get_status()
+    
     return progress
+
+
+@router.get("/status")
+async def get_training_status():
+    """
+    Get training thread status (simpler than /progress).
+    
+    Returns:
+    - Whether training is active
+    - Thread information
+    """
+    return background_trainer.get_status()
 
 
 @router.post(
@@ -113,22 +130,21 @@ async def train_model(request: TrainingRequest):
     responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}}
 )
 async def train_model_with_pdf(
-    background_tasks: BackgroundTasks,
     model_name: str = Form(...),
     training_examples: str = Form(...),  # JSON string
     pdf_file: UploadFile = File(...)
 ):
     """
-    Train a model with PDF context and training examples (async with progress tracking).
+    Train a model with PDF context and training examples (runs in background thread).
     
-    This endpoint returns immediately and trains in the background.
+    This endpoint returns immediately. Training runs in a separate thread.
     Use GET /api/training/progress to monitor training progress.
     
     Steps:
     1. Uploads and validates PDF
     2. Extracts text from PDF
     3. Stores in ChromaDB for RAG
-    4. Trains LoRA model with examples (in background)
+    4. Starts training in background thread
     
     The PDF content will be used for context retrieval during inference.
     """
@@ -138,6 +154,13 @@ async def train_model_with_pdf(
     })
     
     try:
+        # Check if training is already in progress
+        if background_trainer.is_training_active():
+            raise HTTPException(
+                status_code=409,
+                detail="Training already in progress. Please wait for current training to complete."
+            )
+        
         # Parse training examples from JSON string
         examples_data = json.loads(training_examples)
         training_examples_list = [
@@ -155,6 +178,7 @@ async def train_model_with_pdf(
             )
         
         # Save PDF file
+        logger.info(f"Saving PDF file: {pdf_file.filename}")
         pdf_content = await pdf_file.read()
         pdf_path = PDFProcessor.save_pdf(pdf_content, pdf_file.filename)
         
@@ -169,35 +193,33 @@ async def train_model_with_pdf(
         chromadb.add_document(pdf_text, model_name)
         logger.info(f"PDF successfully indexed in ChromaDB")
         
-        # Define background training function
-        def train_in_background():
-            try:
-                logger.info(f"Starting background training for: {model_name}")
-                trainer = LoRATrainer()
-                metadata = trainer.train(
-                    training_examples=training_examples_list,
-                    model_name=model_name,
-                    pdf_text=pdf_text
-                )
-                logger.info(f"Background training completed: {model_name}")
-                return metadata
-            except Exception as e:
-                logger.error(f"Background training failed: {str(e)}", exc_info=True)
-                raise
+        # Start training in background thread
+        success = background_trainer.start_training(
+            model_name=model_name,
+            training_examples=training_examples_list,
+            pdf_text=pdf_text
+        )
         
-        # Add training to background tasks
-        background_tasks.add_task(train_in_background)
+        if not success:
+            raise HTTPException(
+                status_code=409,
+                detail="Failed to start training. Another training may be in progress."
+            )
+        
+        logger.info(f"Training started in background thread: {model_name}")
         
         # Return immediately with accepted status
         return {
             "success": True,
             "model_name": model_name,
             "status": "training_started",
-            "message": f"Training started for model '{model_name}'. Use GET /api/training/progress to monitor progress.",
+            "message": f"Training started for model '{model_name}' in background. Use GET /api/training/progress to monitor progress.",
             "pdf_filename": pdf_file.filename,
             "pdf_text_length": len(pdf_text),
+            "pdf_word_count": len(pdf_text.split()),
             "num_examples": len(training_examples_list),
-            "progress_endpoint": "/api/training/progress"
+            "progress_endpoint": "/api/training/progress",
+            "estimated_time": "30-60 minutes on CPU, 5-10 minutes on GPU"
         }
         
     except json.JSONDecodeError as e:
@@ -209,6 +231,8 @@ async def train_model_with_pdf(
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Training with PDF failed: {str(e)}", exc_info=True)
         raise HTTPException(

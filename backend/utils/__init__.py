@@ -13,6 +13,7 @@ from utils.model_loader import (
 )
 from utils.pdf_processor import PDFProcessor
 from utils.training_progress import progress_manager
+from utils.background_training import background_trainer
 
 __all__ = [
     "download_and_load_base_model",
@@ -20,5 +21,6 @@ __all__ = [
     "get_lora_target_modules",
     "get_generation_config",
     "PDFProcessor",
-    "progress_manager"
+    "progress_manager",
+    "background_trainer"
 ]
