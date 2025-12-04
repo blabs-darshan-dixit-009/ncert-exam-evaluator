@@ -35,7 +35,7 @@ class TrainingProgressManager:
             "start_time": datetime.now().isoformat(),
             "estimated_time_remaining": None,
             "total_examples": total_examples,
-            "message": "Initializing training...",
+            "status_message": "Initializing training...",  # Renamed from 'message'
             "error": None
         }
         self._save_progress(progress)
@@ -46,17 +46,17 @@ class TrainingProgressManager:
         })
         return progress
     
-    def update_stage(self, stage: str, message: str):
+    def update_stage(self, stage: str, status_msg: str):
         """Update current training stage"""
         progress = self._load_progress()
         if progress:
             progress["stage"] = stage
-            progress["message"] = message
+            progress["status_message"] = status_msg  # Renamed from 'message'
             progress["status"] = "running"
             self._save_progress(progress)
             logger.info(f"Training stage: {stage}", extra={
                 "stage": stage,
-                "message": message
+                "status_msg": status_msg  # Renamed from 'message'
             })
     
     def update_epoch(self, current_epoch: int, total_epochs: int, loss: float = None):
@@ -70,7 +70,7 @@ class TrainingProgressManager:
             
             if loss is not None:
                 progress["training_loss"] = round(loss, 6)
-                progress["message"] = f"Epoch {current_epoch}/{total_epochs} - Loss: {loss:.6f}"
+                progress["status_message"] = f"Epoch {current_epoch}/{total_epochs} - Loss: {loss:.6f}"  # Renamed
             
             # Calculate progress percentage
             progress["progress_percentage"] = int((current_epoch / total_epochs) * 100)
@@ -101,9 +101,9 @@ class TrainingProgressManager:
             if loss is not None:
                 progress["training_loss"] = round(loss, 6)
             
-            # Update message
+            # Update status_message (renamed from 'message')
             step_pct = int((current_step / total_steps) * 100) if total_steps > 0 else 0
-            progress["message"] = f"Epoch {progress['current_epoch']}/{progress['total_epochs']} - Step {current_step}/{total_steps} ({step_pct}%)"
+            progress["status_message"] = f"Epoch {progress['current_epoch']}/{progress['total_epochs']} - Step {current_step}/{total_steps} ({step_pct}%)"
             
             self._save_progress(progress)
             
@@ -123,7 +123,7 @@ class TrainingProgressManager:
             progress["stage"] = "Training completed"
             progress["progress_percentage"] = 100
             progress["training_loss"] = round(final_loss, 6)
-            progress["message"] = f"Training completed successfully! Final loss: {final_loss:.6f}"
+            progress["status_message"] = f"Training completed successfully! Final loss: {final_loss:.6f}"  # Renamed
             progress["end_time"] = datetime.now().isoformat()
             progress["metadata"] = metadata
             
@@ -146,12 +146,12 @@ class TrainingProgressManager:
             progress["status"] = "failed"
             progress["stage"] = "Training failed"
             progress["error"] = error_message
-            progress["message"] = f"Training failed: {error_message}"
+            progress["status_message"] = f"Training failed: {error_message}"  # Renamed
             progress["end_time"] = datetime.now().isoformat()
             self._save_progress(progress)
             logger.error(f"Training failed", extra={
                 "model_name": progress["model_name"],
-                "error": error_message
+                "error_msg": error_message  # Renamed from 'error'
             })
     
     def get_progress(self) -> Optional[Dict]:

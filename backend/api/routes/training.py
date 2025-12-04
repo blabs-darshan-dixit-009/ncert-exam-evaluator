@@ -34,13 +34,14 @@ async def get_training_progress():
     - Training loss
     - Estimated time remaining
     - Status (initializing, running, completed, failed)
+    - status_message: Human-readable status description
     """
     progress = progress_manager.get_progress()
     
     if not progress:
         return {
             "status": "no_training",
-            "message": "No training in progress"
+            "status_message": "No training in progress"
         }
     
     return progress
